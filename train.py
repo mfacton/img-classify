@@ -10,30 +10,41 @@ from torchvision import datasets, models, transforms
 from torchvision.models import ResNet18_Weights
 from tqdm import tqdm
 
+# Add decay to penalize large weights
+# (prevents overfitting)
+decay = 0.0002
 learning_rate = 0.001
 batch_size = 144
 num_epochs = 5
 
+# if blank start training from random
+start_model = ""
+# start_model = "resnet18_best.pth"
+
+save_path = "models/"
 data_path = "data/"
+
 data_groups = ["test", "train", "val"]
 group_datasets = {}
 group_loaders = {}
 
 if torch.cuda.is_available():
-    print("CUDA Detected: Using CUDA to train")
+    print("CUDA Detected: Using CUDA to run")
     device = torch.device("cuda")
 else:
-    print("CUDA not Detected: Using CPU to train")
+    print("CUDA not Detected: Using CPU to run")
     device = torch.device("cpu")
 print()
 
 
 img_transform = transforms.Compose(
     [
-        # Rotate random up to 15 degrees
-        transforms.RandomRotation(degrees=15),
+        # Rotate random up to 30 degrees
+        transforms.RandomRotation(degrees=30),
         transforms.Resize((224, 224)),
         transforms.ToTensor(),
+        # Normalize to standard resnet input
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
     ]
 )
 
@@ -76,11 +87,15 @@ resnet = models.resnet18(weights=ResNet18_Weights.DEFAULT)
 num_ftrs = resnet.fc.in_features
 # Modify output to match number of classes
 resnet.fc = nn.Linear(num_ftrs, len(gp_dataset.classes))
+# Load existing model weights if specified
+if start_model:
+    print(f"Loading saved model: {start_model}")
+    resnet.load_state_dict(torch.load(save_path + start_model))
 # move to CUDA if applicable
 resnet = resnet.to(device)
 
 # Set optimizer, learning rate, and loss function
-optimizer = optim.Adam(resnet.parameters(), lr=learning_rate)
+optimizer = optim.Adam(resnet.parameters(), lr=learning_rate, weight_decay=decay)
 criterion = nn.CrossEntropyLoss()
 
 
@@ -120,16 +135,19 @@ def train_model(model, criterion, optimizer):
         epoch_accuracy = correct_predictions / total_predictions
 
         # Validation phase (evaluate on validation set)
-        model.eval()
         val_loss, val_accuracy = evaluate_model(model, criterion)
 
         # Print progress
-        print()
         print(
             f"Epoch [{epoch+1}/{num_epochs}], "
             f"Train Loss: {epoch_loss:.4f}, Train Acc: {epoch_accuracy:.4f}, "
-            f"Val Loss: {val_loss:.4f}, Val Acc: {val_accuracy:.4f}"
+            f"Eval Loss: {val_loss:.4f}, Eval Acc: {val_accuracy:.4f}"
         )
+
+        total_path = save_path + f"resnet18_epoch_{epoch+1}.pth"
+        torch.save(model.state_dict(), total_path)
+        print(f"Model saved at {total_path}")
+
         print()
 
 
