@@ -110,5 +110,5 @@ def evaluate_model(model, criterion, group_name):
     print(f"Eval Loss: {val_loss:.4f}, Eval Acc: {val_accuracy:.4f}")
 
 
-print("Starting evaluation")
-evaluate_model(resnet, criterion, "val")
+print("Starting test")
+evaluate_model(resnet, criterion, "test")

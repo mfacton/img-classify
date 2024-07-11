@@ -12,7 +12,7 @@ from tqdm import tqdm
 
 # Add decay to penalize large weights
 # (prevents overfitting)
-decay = 0.0002
+decay = 0.0005
 learning_rate = 0.001
 batch_size = 144
 num_epochs = 5
