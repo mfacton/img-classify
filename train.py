@@ -12,7 +12,7 @@ from tqdm import tqdm
 
 # Add decay to penalize large weights
 # (prevents overfitting)
-decay = 0.0005
+decay = 0.001
 learning_rate = 0.001
 batch_size = 144
 num_epochs = 5
@@ -177,5 +177,3 @@ def evaluate_model(model, criterion):
 print("Starting training")
 print()
 train_model(resnet, criterion, optimizer)
-
-# Example usage: evaluate_model(resnet, criterion, test_loader)
